@@ -107,7 +107,7 @@ button.dt{font-size:16px;font-weight:500;color:var(--tx);text-align:left}button.
 #ta{width:100%;height:180px;border:0;border-radius:12px;background:var(--bg);color:var(--tx);padding:12px;font:12px/1.5 ui-monospace,Menlo,monospace;resize:none;margin:4px 0 8px}
 .sh .mh{font-size:17px;font-weight:600;color:var(--tx)}.sh .mh button{white-space:nowrap;font-size:15px;font-weight:400;padding:0}
 </style></head><body><main>
-<header class="hd"><h1>올리브영 SOL통장<br>혜택 체크하기</h1><div class="ib"><button id="cl" title="백업" aria-label="백업"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="mn" id="mn"><button id="sv">CSV 저장</button><button id="ld">CSV 불러오기</button><button id="tx">텍스트로 복사·붙여넣기</button></div><input type="file" id="fi" accept=".csv,text/csv" hidden></div></header><div id="toast"></div><div class="ov" id="ov"></div>
+<header class="hd"><h1>올리브영 SOL통장<br>혜택 체크하기</h1><div class="ib"><button id="cl" title="백업" aria-label="백업"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="mn" id="mn"><button id="sv">데이터 내보내기</button><button id="ld">데이터 가져오기</button></div><input type="file" id="fi" accept=".json,application/json" hidden></div></header><div id="toast"></div><div class="ov" id="ov"></div>
 <div class="card fx2" id="fx"></div><input id="jd" hidden>
 <div id="app"></div>
 <div class="card info"><h2>알아두세요</h2><h3>올리브영 혜택 내용</h3><ul>
@@ -206,43 +206,24 @@ $('#app').addEventListener('click',e=>{
  if(b.dataset.day){sel=b.dataset.day;draw()}
 });
 
-let log=[];try{log=JSON.parse(localStorage.getItem('olivelog')||'[]')}catch(e){}
-const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
 let tt;const note=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),3200)};
-const HEAD='저장일시,가입일,항목ID,항목,일정,완료,사용기한,사용';
-function snap(){const ts=new Date().toISOString().slice(0,16).replace('T',' ');return build().filter(i=>i.type!='g').map(i=>[ts,join,i.id,i.t,K(i.date),st[i.id]?1:0,st['e_'+i.id]||'',st['u_'+i.id]?1:0])}
-const csvOf=rows=>[HEAD].concat(rows.map(r=>r.map(q).join(','))).join('\n');
-function openText(rows,msg){const ov=$('#ov');pk=null;
- ov.innerHTML=`<div class="sh"><div class="mh"><span>${msg}</span><button data-px>닫기</button></div><textarea id="ta" spellcheck="false"></textarea><div class="ft"><button id="cp">복사</button><button id="ap">붙여넣은 내용 불러오기</button></div></div>`;
- $('#ta').value=csvOf(rows);ov.classList.add('on')}
+const FN='olive-sol-benefits.json';
 $('#sv').onclick=async()=>{
- const rows=log.concat(snap());
+ const text=JSON.stringify({app:'olive-sol-benefits',version:1,exportedAt:new Date().toISOString(),join:JOIN,st},null,2);
  try{const dl=window.claude&&await claude.use('downloads');
-  if(!dl)throw {code:'none'};
-  await dl.save({filename:'olive-sol-benefits.csv',data:'\ufeff'+csvOf(rows)});
-  log=rows;try{localStorage.setItem('olivelog',JSON.stringify(log))}catch(e){}
-  note('olive-sol-benefits.csv로 저장했어요')}
- catch(e){if(e&&e.code=='declined'){note('저장을 취소했어요.');return}
-  log=rows;try{localStorage.setItem('olivelog',JSON.stringify(log))}catch(x){}
-  openText(rows,'텍스트로 백업하기')}
-};
-$('#tx').onclick=()=>openText(log.concat(snap()),'텍스트로 백업하기');
-function parse(t){const R=[];let r=[],c='',iq=false;t=t.replace(/^\ufeff/,'');
- for(let i=0;i<t.length;i++){const ch=t[i];
-  if(iq){if(ch=='"'){if(t[i+1]=='"'){c+='"';i++}else iq=false}else c+=ch}
-  else if(ch=='"')iq=true;else if(ch==','){r.push(c);c=''}
-  else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&t[i+1]=='\n')i++;r.push(c);c='';R.push(r);r=[]}
-  else c+=ch}
- if(c||r.length){r.push(c);R.push(r)}return R.filter(x=>x.length>=6)}
+  if(dl){await dl.save({filename:FN,data:text});note('내보냈어요');return}}
+ catch(e){if(e&&e.code=='declined'){note('저장을 취소했어요.');return}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=FN;
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);note('내보냈어요')};
 $('#ld').onclick=()=>$('#fi').click();
-function applyCsv(t){try{const R=parse(t).slice(1);if(!R.length)throw 0;
-  const last=R[R.length-1][0],S=R.filter(r=>r[0]==last);
-  join=JOIN;st={};S.forEach(r=>{if(r[5]=='1')st[r[2]]=true;if(r[6])st['e_'+r[2]]=r[6];if(r[7]=='1')st['u_'+r[2]]=true});log=R;
-  try{localStorage.setItem('olivelog',JSON.stringify(log))}catch(x){}
-  cur=new Date(join+'T00:00:00');cur.setDate(1);save();draw();note('불러왔어요. 가장 최근 기록('+last+')을 적용했습니다.');return true}
- catch(x){note('CSV를 읽지 못했어요. 이 앱에서 저장한 내용인지 확인해 주세요.');return false}}
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();
- fr.onload=()=>{applyCsv(fr.result);e.target.value=''};fr.readAsText(f,'utf-8')};
+ fr.onload=()=>{try{const d=JSON.parse(fr.result);
+  if(!d||d.app!='olive-sol-benefits'||!d.st||typeof d.st!='object')throw 0;
+  if(!confirm('백업 파일을 불러오면 현재 기록이 모두 대체돼요. 계속할까요?'))return;
+  st=d.st;save();draw();note('불러왔어요')}
+  catch(x){note('올바른 백업 파일이 아니에요.')}
+  e.target.value=''};
+ fr.readAsText(f,'utf-8')};
 $('#app').addEventListener('change',e=>{const i=e.target.dataset.ex;if(i){st['e_'+i]=e.target.value;save();draw()}});
 $('#cl').onclick=e=>{e.stopPropagation();$('#mn').classList.toggle('on')};
 document.addEventListener('click',e=>{if(!e.target.closest('.ib'))$('#mn').classList.remove('on')});
@@ -258,9 +239,7 @@ function drawSheet(){const ov=$('#ov');if(!pk){ov.classList.remove('on');return}
 $('#ov').addEventListener('click',e=>{const b=e.target.closest('button');
  if(e.target.id=='ov'||(b&&b.hasAttribute('data-px'))){pk=null;drawSheet();return}
  if(!b)return;
- if(b.id=='cp'){const ta=$('#ta');ta.select();const ok=()=>note('복사했어요');try{navigator.clipboard.writeText(ta.value).then(ok,()=>{document.execCommand('copy');ok()})}catch(x){document.execCommand('copy');ok()}return}
- if(b.id=='ap'){if(applyCsv($('#ta').value)){pk=null;drawSheet()}return}
- if(b.dataset.pm){const d=new Date(pk.y,pk.m+ +b.dataset.pm,1);pk.y=d.getFullYear();pk.m=d.getMonth();drawSheet()}
+  if(b.dataset.pm){const d=new Date(pk.y,pk.m+ +b.dataset.pm,1);pk.y=d.getFullYear();pk.m=d.getMonth();drawSheet()}
  if(b.dataset.pd){st['e_'+pk.id]=b.dataset.pd;pk=null;save();drawSheet();draw()}
  if(b.hasAttribute('data-pc')){delete st['e_'+pk.id];pk=null;save();drawSheet();draw()}});
 (async()=>{try{if(!window.claude)return;const[u,db]=await Promise.all([claude.use('user'),claude.use('db')]);if(!u||!db)return;
