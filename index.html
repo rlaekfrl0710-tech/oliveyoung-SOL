@@ -98,6 +98,12 @@ button.dt{font-size:16px;font-weight:500;color:var(--tx);text-align:left}button.
 .sh .ft{display:flex;justify-content:space-between;padding-top:8px}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:rgba(40,40,45,.94);color:#fff;font-size:14px;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;max-width:90%;text-align:center;z-index:30}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+.tag{background:rgba(52,199,89,.15);color:#1e9e4a}
+@media(prefers-color-scheme:dark){.tag{color:#34c759}}
+.big{color:var(--ac)}
+.lb .row>span{font-weight:700;color:#1e9e4a}
+@media(prefers-color-scheme:dark){.lb .row>span{color:#34c759}}
+.stat b{color:var(--tx)}
 </style></head><body><main>
 <header class="hd"><h1>올리브영 SOL통장<br>혜택 체크하기</h1><div class="ib"><button id="cl" title="백업" aria-label="백업"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="mn" id="mn"><button id="sv">CSV 저장</button><button id="ld">CSV 불러오기</button></div><input type="file" id="fi" accept=".csv,text/csv" hidden></div></header><div id="toast"></div><div class="ov" id="ov"></div>
 <div class="card fx2" id="fx"></div><input id="jd" hidden>
