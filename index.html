@@ -116,6 +116,7 @@ details summary{cursor:pointer;color:var(--ac);font-size:14px;padding:4px 0 10px
 .kv{display:flex;justify-content:space-between;gap:12px;padding:12px 0;font-size:14px}.kv+.kv{border-top:1px solid var(--bd)}.kv span{color:var(--mu);flex:none}.kv b{font-weight:600;text-align:right}
 .card>h2+.kv{border-top:0}
 .bk{display:none;align-items:center;gap:4px;margin:-8px 0 14px;padding:10px 16px 10px 10px;font-size:17px;font-weight:600;background:var(--fill);border-radius:999px;color:var(--ac)}
+a.li{text-decoration:none;color:var(--tx)}
 </style></head><body><main>
 <button id="bk" class="bk" data-go="home" aria-label="목록으로"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span>목록</span></button><header class="hd"><h1 id="h1">혜택 체크리스트</h1><div class="ib"><button id="cl" title="백업" aria-label="백업"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="mn" id="mn"><button id="sv">데이터 내보내기</button><button id="ld">데이터 가져오기</button></div><input type="file" id="fi" accept=".json,application/json" hidden></div></header><div id="toast"></div><div class="ov" id="ov"></div>
 <div class="card fx2" id="fx"></div><input id="jd" hidden>
@@ -164,7 +165,7 @@ function gf(it){if(!it.val||!st[it.id])return'';const e=st['e_'+it.id]||'',u=st[
  const D=e?new Date(e+'T00:00:00'):null,n=D?dd(D):null;
  let pill='';if(u)pill='<span class="pill g">사용 완료</span>';else if(D)pill=n<0?'<span class="pill r">기간 만료</span>':n==0?'<span class="pill w">오늘 마감</span>':`<span class="pill ${n<=7?'w':''}">D-${n}</span>`;
  return`<div class="gf"><div class="top"><div><div class="k">사용기한</div><button class="dt ${D?'':'empty'}" data-pick="${it.id}"><span>${D?`${String(D.getFullYear()).slice(2)}.${pad(D.getMonth()+1)}.${pad(D.getDate())} (${'일월화수목금토'[D.getDay()]}) 까지`:'날짜를 선택하세요'}</span></button></div>${pill}</div><div class="sg"><button data-use="${it.id}" data-v="0" class="${u?'':'on'}">미사용</button><button data-use="${it.id}" data-v="1" class="${u?'on':''}">사용 완료</button></div></div>`}
-function row(it){const mt=(it.val?`<span class="tag">+${it.val.toLocaleString()}원</span>`:'')+dtag(it);return`<div class="it ${st[it.id]?'done':''}"><input type="checkbox" data-id="${it.id}" ${st[it.id]?'checked':''}><div class="t">${it.t}<small>${it.type=='p'?'해당 월 중 아무 때나':LBL[it.type]+' '+fmt(it.date)}</small>${mt?`<div class="mt">${mt}</div>`:''}${gf(it)}</div></div>`}
+function row(it){const mt=(it.val?`<span class="tag">+${it.val.toLocaleString()}원</span>`:'')+dtag(it);return`<div class="it ${st[it.id]?'done':''}"><input type="checkbox" data-id="${it.id}" ${st[it.id]?'checked':''}><div class="t">${it.t}<small>${it.sub?it.sub:it.type=='p'?'해당 월 중 아무 때나':/^tr\d+$/.test(it.id)?`<span data-pickd="${it.id}" style="cursor:pointer">${LBL[it.type]} ${fmt(it.date)}</span>`:LBL[it.type]+' '+fmt(it.date)}</small>${mt?`<div class="mt">${mt}</div>`:''}${gf(it)}</div></div>`}
 function drawOlive(){
  const A=$('#app');if(!join){A.innerHTML='';return}
  const L=build();
@@ -206,6 +207,7 @@ function drawOlive(){
 }
 $('#app').addEventListener('click',e=>{
  const t=e.target;
+ if(t.dataset.pickd){const c=tpBuild().L.find(i=>i.id==t.dataset.pickd);pk={id:'d_'+t.dataset.pickd,y:c.date.getFullYear(),m:c.date.getMonth()};drawSheet();return}
  if(t.dataset.ex){try{t.showPicker()}catch(x){}return}
  if(t.dataset.id){st[t.dataset.id]=t.checked;save();draw();return}
  const b=t.closest('button');if(!b)return;
@@ -268,9 +270,10 @@ function tpBuild(){
  const O=new Date(TPO()+'T00:00:00'),y=O.getFullYear(),m=O.getMonth(),d=O.getDate(),L=[];
  const d90=new Date(y,m,d+90),pe=new Date(y,m+7,d-1);
  L.push({id:'t90',date:d90,t:'90일 조건 (음성 15분↑ 또는 데이터 100MB↑)',type:'o',k:0});
- L.push({id:'tpe',date:pe,t:'요금제 변경 (할인 종료 전)',type:'o',k:0});
- for(let k=1;k<=12;k++)L.push({id:'tr'+k,date:new Date(y,m+1+k,0),t:`올리브영 상품권 ${k}/12${k>1?' · 말일 추정':''}`,type:'r',val:5000,k});
- return{O,L,d90,pe,y,m,d};
+ const pm=new Date(pe.getFullYear(),pe.getMonth(),0),re=pm,rs=new Date(pm.getFullYear(),pm.getMonth(),pm.getDate()-6);
+ L.push({id:'tpe',date:rs,t:'요금제 변경 (할인 종료 전달 마지막 주)',sub:`리마인드 ${fmt(rs)} ~ ${fmt(re)}`,type:'o',k:0});
+ for(let k=1;k<=12;k++){const dd0=new Date(y,m+1+k,0),ov=st['e_d_tr'+k];L.push({id:'tr'+k,date:ov?new Date(ov+'T00:00:00'):dd0,ddef:dd0,t:`올리브영 상품권 ${k}회`,type:'r',val:5000,k})}
+ return{O,L,d90,pe,y,m,d,rs,re};
 }
 function applyScreen(){
  $('#fx').style.display=screen=='olive'?'':'none';$('#oinfo').style.display=screen=='olive'?'':'none';
@@ -281,31 +284,28 @@ function draw(){applyScreen();if(screen=='home')drawHome();else if(screen=='tplu
 function drawHome(){
  const L=build(),earned=L.filter(i=>i.val&&st[i.id]).reduce((a,i)=>a+i.val,0),T=tpBuild();
  const got=T.L.filter(i=>/^tr\d+$/.test(i.id)&&st[i.id]).length;
- $('#app').innerHTML=`<div class="card ls"><button class="li" data-go="olive"><span class="rk">1</span><span class="lt"><b>올리브영 SOL통장</b><small>받은 혜택 ${earned.toLocaleString()}원 / 110,000원</small></span><span class="ch2">›</span></button><button class="li" data-go="tplus"><span class="rk">2</span><span class="lt"><b>티플러스 요금제</b><small>요금제 변경 기한 ${DD(T.pe)} · 90일 조건 ${DD(T.d90)}</small></span><span class="ch2">›</span></button></div><div class="mu" style="text-align:center">혜택은 앞으로 계속 추가할 수 있어요</div>`}
+ $('#app').innerHTML=`<div class="card ls"><button class="li" data-go="olive"><span class="rk">1</span><span class="lt"><b>올리브영 SOL통장</b><small>받은 혜택 ${earned.toLocaleString()}원 / 110,000원</small></span><span class="ch2">›</span></button><button class="li" data-go="tplus"><span class="rk">2</span><span class="lt"><b>티플러스 요금제</b><small>요금제 변경 리마인드 ${DD(T.rs)} · 90일 조건 ${DD(T.d90)}</small></span><span class="ch2">›</span></button></div><div class="mu" style="text-align:center">혜택은 앞으로 계속 추가할 수 있어요</div>`}
 function drawTplus(){
- const{O,L,pe,y,m}=tpBuild(),cps=L.filter(i=>/^tr\d+$/.test(i.id)),inn=cps.filter(i=>i.date<=pe),out=cps.filter(i=>i.date>pe);
+ const{O,L,pe,y,m,rs,re}=tpBuild(),cps=L.filter(i=>/^tr\d+$/.test(i.id)),inn=cps.filter(i=>i.ddef<=pe),out=cps.filter(i=>i.ddef>pe);
  const rec=st.rec,start=inn.length?inn[inn.length-1].date:O,md=x=>(x.getMonth()+1)+'/'+x.getDate(),W=n=>n.toLocaleString()+'원';
- const tl=[...inn,L[1]].sort((a,b)=>a.date-b.date),tasks=tl.length+1,done=tl.filter(i=>st[i.id]).length+(rec?1:0);
+ const tl=[...inn,L[1]].sort((a,b)=>a.date-b.date),tasks=tl.length,done=tl.filter(i=>st[i.id]).length;
  let rc=0;for(let j=1;j<=24;j++){const g=j==1?new Date(y,m,O.getDate()+2):new Date(y,m+j-1,1);if(g<=pe)rc++}
  const paid=15900*7,cp=inn.length*5000;
  let rl='<div class="mu" style="padding:2px 0 12px">신청해야만 지급돼요. 신청했다면 위 목록에서 체크하세요.</div>';
- if(rec){rl=`<div class="mu" style="padding:2px 0 8px">변경 전까지 ${rc}회 · ${rc*20}GB (24개월 유지 시 최대 480GB)</div><details><summary>24개월 전체 일정</summary><div class="rw h"><span>개월차 · 월</span><span>지급 시점</span><span>누적</span></div>`;
-  for(let j=1;j<=24;j++){const dt=new Date(y,m+j-1,1);rl+=`<div class="rw"><span>${j}개월차 · ${String(dt.getFullYear()).slice(2)}.${pad(dt.getMonth()+1)}</span><span>${j==1?(x=>(x.getMonth()+1)+'/'+x.getDate()+' 이후')(new Date(y,m,O.getDate()+2)):(dt.getMonth()+1)+'/1 자동'}</span><span>${20*j}GB</span></div>`}
-  rl+='<div class="mu" style="padding:10px 0 12px">월말(30·31일) 개통은 지연될 수 있고, 미사용 데이터는 이월되지 않아요</div></details>'}
- $('#app').innerHTML=`<div class="card"><div class="fx2"><div><span>개통일</span><button class="dt" style="font-weight:700" data-pick="tpopen">${F2(O)}</button></div><div><span>요금제 변경 기한</span><div class="ln"><b>${F2(pe)}</b><em>${DD(pe)}</em></div></div></div><div class="mu" style="padding-top:12px">권장 변경 구간 ${md(start)} ~ ${md(pe)} · 이후 월 51,700원</div></div>
+ if(rec){rl=`<div class="mu" style="padding:2px 0 4px">변경 전까지 ${rc}회 · ${rc*20}GB</div><div class="rw h"><span>개월차 · 월</span><span>지급 시점</span><span>누적</span></div>`;
+  for(let j=1;j<=rc;j++){const dt=new Date(y,m+j-1,1);rl+=`<div class="rw"><span>${j}개월차 · ${String(dt.getFullYear()).slice(2)}.${pad(dt.getMonth()+1)}</span><span>${j==1?(x=>(x.getMonth()+1)+'/'+x.getDate()+' 이후')(new Date(y,m,O.getDate()+2)):(dt.getMonth()+1)+'/1 자동'}</span><span>${20*j}GB</span></div>`}
+  rl+='<div class="mu" style="padding:10px 0 12px">월말(30·31일) 개통은 지연될 수 있고, 미사용 데이터는 이월되지 않아요</div>'}
+ $('#app').innerHTML=`<div class="card"><div class="fx2"><div><span>개통일</span><button class="dt" style="font-weight:700" data-pick="tpopen">${F2(O)}</button></div><div><span>요금제 변경 리마인드</span><div class="ln"><b>${F2(rs)}</b><em>${DD(rs)}</em></div></div></div><div class="mu" style="padding-top:12px">마지막 주 ${md(rs)} ~ ${md(re)} · 상품권 ${inn.length}회(${md(re)}) 받은 뒤 변경 · 할인 종료(추정) ${md(pe)}</div></div>
+<div class="card ls"><a class="li" href="https://tplusmobile.com/" target="_blank" rel="noopener noreferrer"><span class="lt"><b>티플러스 홈페이지 바로가기</b><small>tplusmobile.com</small></span><span class="ch2">↗</span></a></div>
 <div class="card"><h2>한눈에 보기</h2>
-<div class="kv"><span>한 달에 내는 돈</span><b>15,900원 → 51,700원</b></div>
-<div class="kv"><span>할인받는 금액</span><b>월 35,800원 · 7개월 ${W(35800*7)}</b></div>
+<div class="kv"><span>한 달에 내는 돈</span><b>월 15,900원 (7개월)</b></div>
 <div class="kv"><span>돌려받는 상품권</span><b>월 5,000원 · ${inn.length}회 ${W(cp)}</b></div>
-<div class="kv"><span>추천결합 데이터</span><b>${rc*20}GB${rec?'':' (신청 시)'}</b></div>
 <div class="kv"><span>7개월 실부담</span><b>약 ${W(paid-cp)}</b></div>
 <div class="mu" style="padding:6px 0 12px">납부 ${W(paid)} − 상품권 ${W(cp)} 기준 · 일할 계산이라 실제 청구액은 달라질 수 있어요</div></div>
 <div class="card"><div class="mh"><span><b>챙길 것</b>날짜순</span><span class="cnt">${done}/${tasks}</span></div>
-<div class="it ${rec?'done':''}"><input type="checkbox" data-id="rec" ${rec?'checked':''}><div class="t">추천결합 신청<small>신청해야 20GB가 지급돼요</small></div></div>${tl.map(row).join('')}</div>
-<div class="card"><h2>추천결합 추가 데이터</h2>${rl}</div>
-<div class="card"><h2>요금제를 유지할 때만 받는 상품권</h2><details><summary>${out.length}회 보기 (월 +35,800원 추가)</summary>${out.map(row).join('')}</details></div>
-<div class="card"><h2>계정 메모</h2><div style="padding-top:6px"><input class="inp" data-m="id" placeholder="아이디" value="${esc(st.m_id)}"><div class="pw"><input class="inp" type="password" data-m="pw" placeholder="비밀번호" value="${esc(st.m_pw)}"><button data-eye>보기</button></div><textarea class="inp" data-m="note" placeholder="메모 (가입 매장, 상담번호 등)">${esc(st.m_note)}</textarea></div><div class="mu">비밀번호는 암호화되지 않고 저장돼요. 중요한 비밀번호는 넣지 마세요.</div></div>
-<div class="card info"><h2>알아두세요</h2><ul><li><b>90일 조건</b> 가입 후 90일 이내 음성통화 15분 이상 또는 데이터 100MB 이상 사용해야 할인혜택이 유지돼요.</li><li><b>올리브영 혜택 중단</b> 명의변경, 전화번호 변경, 요금제 변경, 일시정지, 해지 시 즉시 중단돼요. 상품권은 유효기간 연장·환불이 안 돼요.</li><li><b>청구</b> 프로모션 할인기간은 일할 계산돼요. 7개월간 월 15,900원, 이후 월 51,700원이고 실제 첫 달·종료월 청구액은 확정 불가예요. 기존 티플러스 고객은 요금제 변경 시 프로모션 적용이 안 돼요.</li><li><b>표시 기준</b> 원문에서 확정할 수 없는 날짜는 '추정'으로 표시했어요.</li></ul></div>`}
+${tl.map(row).join('')}</div>
+<div class="card"><h2>계정 메모</h2><div style="padding-top:6px"><input class="inp" data-m="id" placeholder="아이디" value="${esc(st.m_id)}"><input class="inp" data-m="pw" placeholder="비밀번호" autocomplete="off" value="${esc(st.m_pw)}"><textarea class="inp" data-m="note" placeholder="메모 (가입 매장, 상담번호 등)">${esc(st.m_note)}</textarea></div><div class="mu">비밀번호는 암호화되지 않고 저장돼요. 중요한 비밀번호는 넣지 마세요.</div></div>
+<div class="card info"><h2>알아두세요</h2><ul><li><b>90일 조건</b> 가입 후 90일 이내 음성통화 15분 이상 또는 데이터 100MB 이상 사용해야 할인혜택이 유지돼요.</li><li><b>올리브영 혜택 중단</b> 명의변경, 전화번호 변경, 요금제 변경, 일시정지, 해지 시 즉시 중단돼요. 상품권은 유효기간 연장·환불이 안 돼요.</li><li><b>청구</b> 프로모션 할인기간은 일할 계산돼요. 7개월간 월 15,900원이고 실제 첫 달·종료월 청구액은 확정 불가예요. 기존 티플러스 고객은 요금제 변경 시 프로모션 적용이 안 돼요.</li><li><b>할인</b> 7개월간 월 15,900원으로 월 35,800원이 할인돼요. 이후에는 월 51,700원이에요.</li><li><b>추천결합</b> 신청하면 20GB 추가 데이터가 개통월부터 최대 24개월 지급돼요. 회선당 1회이고 요금제를 변경하면 즉시 해지돼요.</li><li><b>표시 기준</b> 원문에서 확정할 수 없는 날짜는 '추정'으로 표시했어요.</li></ul></div>`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){screen=b.dataset.go;window.scrollTo(0,0);draw()}});
 $('#app').addEventListener('input',e=>{const k=e.target.dataset.m;if(k){st['m_'+k]=e.target.value;save()}});
 
