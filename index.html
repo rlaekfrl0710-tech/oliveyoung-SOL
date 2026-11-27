@@ -143,18 +143,27 @@ try{const s=JSON.parse(localStorage.getItem('olive')||'null');if(s){st=s.st||{}}
 const sharedState = state => Object.fromEntries(Object.entries(state)
   .filter(([key,value]) => !key.startsWith('m_') && key !== '__proto__' &&
     (typeof value === 'boolean' || typeof value === 'string')));
-const previous = sharedState(st);
-let known = {}, queued = {}, ready = false, syncing = false;
+let previous = sharedState(st), queued = {};
+try {
+  previous = JSON.parse(localStorage.getItem('olive-before-sharing')) || previous;
+  localStorage.setItem('olive-before-sharing', JSON.stringify(previous));
+  queued = JSON.parse(localStorage.getItem('olive-pending-changes')) || {};
+} catch {}
+let known = {}, ready = false, syncing = false, needsDraw = false;
+const cacheQueue = changes => {
+  try { localStorage.setItem('olive-pending-changes',JSON.stringify(changes)); } catch {}
+};
 const cache = () => {
   try { localStorage.setItem('olive', JSON.stringify({join,st})); } catch {}
 };
 function useShared(data) {
   const next = {...data,...queued};
-  const changed = JSON.stringify(next) !== JSON.stringify(sharedState(st));
-  st = {...Object.fromEntries(Object.entries(st).filter(([key]) => key.startsWith('m_'))),...next};
+  const view = Object.fromEntries(Object.entries(next).filter(([,value]) => value !== null));
+  needsDraw ||= JSON.stringify(view) !== JSON.stringify(sharedState(st));
+  st = {...Object.fromEntries(Object.entries(st).filter(([key]) => key.startsWith('m_'))),...view};
   known = sharedState(st);
   cache();
-  if (changed && !$('#app').contains(document.activeElement)) draw();
+  if (needsDraw && !$('#app').contains(document.activeElement)) { draw(); needsDraw = false; }
 }
 async function sync() {
   if (syncing) return;
@@ -171,10 +180,12 @@ async function sync() {
     const initial = !ready;
     ready = true;
     useShared(data);
+    cacheQueue(queued);
     $('#share-status').textContent = '공유 저장 연결됨';
     if (initial && screen === 'home' && !$('#app').contains(document.activeElement)) draw();
   } catch {
     queued = {...changes,...queued};
+    cacheQueue(queued);
     $('#share-status').textContent = '공유 연결 실패 · 변경사항 재시도 중';
   } finally { syncing = false; }
 }
@@ -188,6 +199,7 @@ const save = () => {
   known = current;
   cache();
   if (Object.keys(queued).length) {
+    cacheQueue(queued);
     $('#share-status').textContent = '공유 저장 중…';
     void sync();
   }
