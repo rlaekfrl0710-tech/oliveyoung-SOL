@@ -1,10 +1,21 @@
 import { get, put, BlobPreconditionFailedError } from '@vercel/blob';
 
+import { createHash, timingSafeEqual } from 'node:crypto';
+
+const accessHash = Buffer.from('397e6f71590c678a667245ab4d05afda2823d6908f8935181e6c58134b019a3d', 'hex');
+function authorized(req) {
+  const header = req.headers.authorization;
+  if (typeof header !== 'string' || !/^Bearer [a-f0-9]{64}$/.test(header)) return false;
+  return timingSafeEqual(createHash('sha256').update(header.slice(7)).digest(), accessHash);
+}
+
 const path = process.env.VERCEL_ENV === 'production' ? 'checklist-v1.json' : 'preview-checklist-v1.json';
 const entryKey = /^item_[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const checkKey = /^(?:o|t90|tpe|(?:p|r|s|tr|u_r|u_s|u_tr)(?:[1-9]|1[0-2])|u_o)$/;
 const dateKey = /^e_(?:o|tpopen|(?:r|s|tr|d_tr)(?:[1-9]|1[0-2]))$/;
 const valid = (key, value) => {
+  if (/^m_(?:id|pw|note)$/.test(key)) return typeof value === 'string' &&
+    /^v1\.[A-Za-z0-9+/]{38,16384}={0,2}$/.test(value);
   if (entryKey.test(key)) return typeof value === 'string' && value.trim() && value.length <= 160;
   if (checkKey.test(key)) return typeof value === 'boolean';
   return dateKey.test(key) && (value === null || value === '' ||
@@ -21,6 +32,7 @@ async function read() {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  if (!authorized(req)) return res.status(404).end();
   try {
     if (req.method === 'GET') return res.json((await read()).data);
     if (req.method !== 'PATCH') {
