@@ -389,11 +389,11 @@ function applyScreen(){
  $('#bk').style.display=screen=='home'?'none':'inline-flex';document.querySelector('.ib').style.display=screen=='home'?'':'none';
  $('#h1').innerHTML={home:'혜택 체크리스트',olive:'올리브영 SOL통장<br>혜택 체크하기',tplus:'티플러스 요금제<br>혜택 체크하기'}[screen];
 }
-function draw(){applyScreen();if(screen=='home'){drawHome();drawSharedEntries();}else if(screen=='tplus')drawTplus();else drawOlive()}
+function draw(){applyScreen();if(screen=='home')drawHome();else if(screen=='tplus')drawTplus();else drawOlive()}
 function drawHome(){
  const L=build(),earned=L.filter(i=>i.val&&st[i.id]).reduce((a,i)=>a+i.val,0),T=tpBuild();
  const got=T.L.filter(i=>/^tr\d+$/.test(i.id)&&st[i.id]).length;
- $('#app').innerHTML=`<div class="card ls"><button class="li" data-go="olive"><span class="rk">1</span><span class="lt"><b>올리브영 SOL통장</b><small>받은 혜택 ${earned.toLocaleString()}원 / 110,000원</small></span><span class="ch2">›</span></button><button class="li" data-go="tplus"><span class="rk">2</span><span class="lt"><b>티플러스 요금제</b><small>요금제 변경 리마인드 ${DD(T.rs)} · 90일 조건 ${DD(T.d90)}</small></span><span class="ch2">›</span></button></div><div class="mu" style="text-align:center">혜택은 앞으로 계속 추가할 수 있어요</div>`}
+ $('#app').innerHTML=`<div class="card ls"><button class="li" data-go="olive"><span class="rk">1</span><span class="lt"><b>올리브영 SOL통장</b><small>받은 혜택 ${earned.toLocaleString()}원 / 110,000원</small></span><span class="ch2">›</span></button><button class="li" data-go="tplus"><span class="rk">2</span><span class="lt"><b>티플러스 요금제</b><small>요금제 변경 리마인드 ${DD(T.rs)} · 90일 조건 ${DD(T.d90)}</small></span><span class="ch2">›</span></button></div>`}
 function drawTplus(){
  const{O,L,pe,y,m,rs,re}=tpBuild(),cps=L.filter(i=>/^tr\d+$/.test(i.id)),inn=cps.filter(i=>i.ddef<=pe),out=cps.filter(i=>i.ddef>pe);
  const rec=st.rec,start=inn.length?inn[inn.length-1].date:O,md=x=>(x.getMonth()+1)+'/'+x.getDate(),W=n=>n.toLocaleString()+'원';
@@ -418,33 +418,7 @@ ${tl.map(row).join('')}</div>
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){screen=b.dataset.go;window.scrollTo(0,0);draw()}});
 $('#app').addEventListener('input',e=>{const k=e.target.dataset.m;if(k){st['m_'+k]=e.target.value;save(650)}});
 
-function drawSharedEntries() {
-  const entries = Object.entries(st).filter(([key]) => key.startsWith('item_'));
-  $('#app').insertAdjacentHTML('beforeend', `<div class="card"><h2>공유 항목</h2>
-    ${entries.map(([key,title]) => `<div class="kv"><span>${esc(title)}</span>
-      <button type="button" data-edit-entry="${esc(key)}">수정</button></div>`).join('')}
-    <form id="shared-entry-form"><input class="inp" name="title" aria-label="새 항목" placeholder="새 항목" maxlength="160" required><button type="submit">추가</button></form>
-    </div>`);
-}
-$('#app').addEventListener('submit', event => {
-  if (event.target.id !== 'shared-entry-form') return;
-  event.preventDefault();
-  const title = event.target.elements.title.value.trim();
-  if (!title) return;
-  st['item_'+crypto.randomUUID()] = title;
-  save();
-  draw();
-});
-$('#app').addEventListener('click', event => {
-  const button = event.target.closest('[data-edit-entry]');
-  if (!button) return;
-  const key = button.dataset.editEntry;
-  const title = prompt('항목 이름 수정',st[key])?.trim();
-  if (!title || title.length > 160) return;
-  st[key] = title;
-  save();
-  draw();
-});
+
 draw();
 void sync();
 setInterval(() => { if (!document.hidden) void sync(); }, 10000);
