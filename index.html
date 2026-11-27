@@ -132,6 +132,7 @@ a.li{text-decoration:none;color:var(--tx)}
 <p class="ex">예) ’26.4월 가입 후 ’26.5, 6, 7월 혜택② 대상인 경우 ’26.7월 16일에 혜택③ 제공</p></li>
 </ul></div>
 </main>
+<p id="share-status" role="status" style="text-align:center;font-size:.8rem;color:#555">공유 저장 연결 중…</p>
 <script>
 const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
 const K=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
@@ -139,8 +140,59 @@ const fmt=d=>`${String(d.getFullYear()).slice(2)}.${pad(d.getMonth()+1)}.${pad(d
 const JOIN='2026-09-11';let screen='home',join=JOIN,st={},tab=0,cur=new Date(),sel=K(new Date());
 const today=new Date();today.setHours(0,0,0,0);
 try{const s=JSON.parse(localStorage.getItem('olive')||'null');if(s){st=s.st||{}}}catch(e){}
-let dbDoc=null,tmr;
-const save=()=>{try{localStorage.setItem('olive',JSON.stringify({join,st}))}catch(e){};if(dbDoc){clearTimeout(tmr);tmr=setTimeout(()=>{dbDoc.set({payload:JSON.stringify({join,st}),updated:Date.now()}).catch(()=>{})},400)}};
+const sharedState = state => Object.fromEntries(Object.entries(state)
+  .filter(([key,value]) => !key.startsWith('m_') && key !== '__proto__' &&
+    (typeof value === 'boolean' || typeof value === 'string')));
+const previous = sharedState(st);
+let known = {}, queued = {}, ready = false, syncing = false;
+const cache = () => {
+  try { localStorage.setItem('olive', JSON.stringify({join,st})); } catch {}
+};
+function useShared(data) {
+  const next = {...data,...queued};
+  const changed = JSON.stringify(next) !== JSON.stringify(sharedState(st));
+  st = {...Object.fromEntries(Object.entries(st).filter(([key]) => key.startsWith('m_'))),...next};
+  known = sharedState(st);
+  cache();
+  if (changed && !$('#app').contains(document.activeElement)) draw();
+}
+async function sync() {
+  if (syncing) return;
+  syncing = true;
+  const changes = queued;
+  queued = {};
+  try {
+    const writing = Object.keys(changes).length > 0;
+    const response = await fetch('/api/checklist', writing ? {
+      method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(changes)
+    } : {cache:'no-store'});
+    if (!response.ok) throw new Error('sync failed');
+    const data = await response.json();
+    const initial = !ready;
+    ready = true;
+    useShared(data);
+    $('#share-status').textContent = '공유 저장 연결됨';
+    if (initial && screen === 'home' && !$('#app').contains(document.activeElement)) draw();
+  } catch {
+    queued = {...changes,...queued};
+    $('#share-status').textContent = '공유 연결 실패 · 변경사항 재시도 중';
+  } finally { syncing = false; }
+}
+const save = () => {
+  const current = sharedState(st);
+  for (const key of new Set([...Object.keys(known),...Object.keys(current)])) {
+    if (known[key] !== current[key]) {
+      queued[key] = current[key] ?? (key.startsWith('e_') ? null : false);
+    }
+  }
+  known = current;
+  cache();
+  if (Object.keys(queued).length) {
+    $('#share-status').textContent = '공유 저장 중…';
+    void sync();
+  }
+};
+known = sharedState(st);
 $('#jd').value=join||K(new Date());
 function lastWeekday(y,m){const d=new Date(y,m+1,0);while(d.getDay()%6==0)d.setDate(d.getDate()-1);return d}
 function build(){
@@ -232,8 +284,8 @@ $('#ld').onclick=()=>$('#fi').click();
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();
  fr.onload=()=>{try{const d=JSON.parse(fr.result);
   if(!d||d.app!='olive-sol-benefits'||!d.st||typeof d.st!='object')throw 0;
-  if(!confirm('백업 파일을 불러오면 현재 기록이 모두 대체돼요. 계속할까요?'))return;
-  st=d.st;save();draw();note('불러왔어요')}
+  if(!confirm('백업의 기록을 현재 목록에 합칠까요?'))return;
+  st={...st,...Object.fromEntries(Object.entries(d.st).filter(([key])=>key!=='__proto__'))};save();draw();note('불러왔어요')}
   catch(x){note('올바른 백업 파일이 아니에요.')}
   e.target.value=''};
  fr.readAsText(f,'utf-8')};
@@ -255,13 +307,6 @@ $('#ov').addEventListener('click',e=>{const b=e.target.closest('button');
   if(b.dataset.pm){const d=new Date(pk.y,pk.m+ +b.dataset.pm,1);pk.y=d.getFullYear();pk.m=d.getMonth();drawSheet()}
  if(b.dataset.pd){st['e_'+pk.id]=b.dataset.pd;pk=null;save();drawSheet();draw()}
  if(b.hasAttribute('data-pc')){delete st['e_'+pk.id];pk=null;save();drawSheet();draw()}});
-(async()=>{try{if(!window.claude)return;const[u,db]=await Promise.all([claude.use('user'),claude.use('db')]);if(!u||!db)return;
- const id=await u.id();if(!id)return;dbDoc=db.doc('data/users/'+id+'/state');
- const sn=await dbDoc.get();
- if(sn.exists){const p=JSON.parse(sn.data().payload);join=JOIN;st=p.st||{};$('#jd').value=join||K(new Date());
-  if(join){cur=new Date(join+'T00:00:00');cur.setDate(1)}
-  try{localStorage.setItem('olive',JSON.stringify({join,st}))}catch(e){}draw()}
- else if(join)save()}catch(e){}})();
 const esc=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const F2=d=>`${String(d.getFullYear()).slice(2)}.${pad(d.getMonth()+1)}.${pad(d.getDate())} (${'일월화수목금토'[d.getDay()]})`;
 const DD=d=>{const n=dd(d);return n>=0?'D-'+n:'지남'};
@@ -280,7 +325,7 @@ function applyScreen(){
  $('#bk').style.display=screen=='home'?'none':'inline-flex';document.querySelector('.ib').style.display=screen=='home'?'':'none';
  $('#h1').innerHTML={home:'혜택 체크리스트',olive:'올리브영 SOL통장<br>혜택 체크하기',tplus:'티플러스 요금제<br>혜택 체크하기'}[screen];
 }
-function draw(){applyScreen();if(screen=='home')drawHome();else if(screen=='tplus')drawTplus();else drawOlive()}
+function draw(){applyScreen();if(screen=='home'){drawHome();drawSharedEntries();}else if(screen=='tplus')drawTplus();else drawOlive()}
 function drawHome(){
  const L=build(),earned=L.filter(i=>i.val&&st[i.id]).reduce((a,i)=>a+i.val,0),T=tpBuild();
  const got=T.L.filter(i=>/^tr\d+$/.test(i.id)&&st[i.id]).length;
@@ -304,10 +349,46 @@ function drawTplus(){
 <div class="mu" style="padding:6px 0 12px">납부 ${W(paid)} − 상품권 ${W(cp)} 기준 · 일할 계산이라 실제 청구액은 달라질 수 있어요</div></div>
 <div class="card"><div class="mh"><span><b>챙길 것</b>날짜순</span><span class="cnt">${done}/${tasks}</span></div>
 ${tl.map(row).join('')}</div>
-<div class="card"><h2>계정 메모</h2><div style="padding-top:6px"><input class="inp" data-m="id" placeholder="아이디" value="${esc(st.m_id)}"><input class="inp" data-m="pw" placeholder="비밀번호" autocomplete="off" value="${esc(st.m_pw)}"><textarea class="inp" data-m="note" placeholder="메모 (가입 매장, 상담번호 등)">${esc(st.m_note)}</textarea></div><div class="mu">비밀번호는 암호화되지 않고 저장돼요. 중요한 비밀번호는 넣지 마세요.</div></div>
+<div class="card"><h2>계정 메모</h2><div style="padding-top:6px"><input class="inp" data-m="id" placeholder="아이디" value="${esc(st.m_id)}"><input class="inp" data-m="pw" placeholder="비밀번호" autocomplete="off" value="${esc(st.m_pw)}"><textarea class="inp" data-m="note" placeholder="메모 (가입 매장, 상담번호 등)">${esc(st.m_note)}</textarea></div><div class="mu">계정 메모는 이 브라우저에 저장돼요.</div></div>
 <div class="card info"><h2>알아두세요</h2><ul><li><b>90일 조건</b> 가입 후 90일 이내 음성통화 15분 이상 또는 데이터 100MB 이상 사용해야 할인혜택이 유지돼요.</li><li><b>올리브영 혜택 중단</b> 명의변경, 전화번호 변경, 요금제 변경, 일시정지, 해지 시 즉시 중단돼요. 상품권은 유효기간 연장·환불이 안 돼요.</li><li><b>청구</b> 프로모션 할인기간은 일할 계산돼요. 7개월간 월 15,900원이고 실제 첫 달·종료월 청구액은 확정 불가예요. 기존 티플러스 고객은 요금제 변경 시 프로모션 적용이 안 돼요.</li><li><b>할인</b> 7개월간 월 15,900원으로 월 35,800원이 할인돼요. 이후에는 월 51,700원이에요.</li><li><b>추천결합</b> 신청하면 20GB 추가 데이터가 개통월부터 최대 24개월 지급돼요. 회선당 1회이고 요금제를 변경하면 즉시 해지돼요.</li><li><b>표시 기준</b> 원문에서 확정할 수 없는 날짜는 '추정'으로 표시했어요.</li></ul></div>`}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){screen=b.dataset.go;window.scrollTo(0,0);draw()}});
 $('#app').addEventListener('input',e=>{const k=e.target.dataset.m;if(k){st['m_'+k]=e.target.value;save()}});
 
+function drawSharedEntries() {
+  const entries = Object.entries(st).filter(([key]) => key.startsWith('item_'));
+  const importButton = ready && Object.keys(previous).some(key => !(key in st))
+    ? '<button type="button" data-import-local>이 브라우저의 이전 기록 가져오기</button>' : '';
+  $('#app').insertAdjacentHTML('beforeend', `<div class="card"><h2>공유 항목</h2>
+    ${entries.map(([key,title]) => `<div class="kv"><span>${esc(title)}</span>
+      <button type="button" data-edit-entry="${esc(key)}">수정</button></div>`).join('')}
+    <form id="shared-entry-form"><input class="inp" name="title" aria-label="새 항목" placeholder="새 항목" maxlength="160" required><button type="submit">추가</button></form>
+    ${importButton}</div>`);
+}
+$('#app').addEventListener('submit', event => {
+  if (event.target.id !== 'shared-entry-form') return;
+  event.preventDefault();
+  const title = event.target.elements.title.value.trim();
+  if (!title) return;
+  st['item_'+crypto.randomUUID()] = title;
+  save();
+  draw();
+});
+$('#app').addEventListener('click', event => {
+  const button = event.target.closest('[data-edit-entry],[data-import-local]');
+  if (!button) return;
+  if (button.hasAttribute('data-import-local')) {
+    st = {...previous,...st};
+  } else {
+    const key = button.dataset.editEntry;
+    const title = prompt('항목 이름 수정',st[key])?.trim();
+    if (!title || title.length > 160) return;
+    st[key] = title;
+  }
+  save();
+  draw();
+});
 draw();
+void sync();
+setInterval(() => { if (!document.hidden) void sync(); }, 10000);
+window.addEventListener('online',sync);
 </script></body></html>
